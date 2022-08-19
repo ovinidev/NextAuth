@@ -67,22 +67,26 @@ export const AuthProvider = ({ children }: AuthContextProps) => {
       isAuthenticated: false,
     });
 
-    destroyCookie(undefined, 'token');
-    destroyCookie(undefined, 'refreshToken');
-
     push('/');
   }
 
   useEffect(() => {
-    const { token, refreshToken } = parseCookies();
+    const { token } = parseCookies();
 
     if (token) {
       (async function getData() {
         try {
-          const response = await getUserData();
-          setAccountInfo(response);
+          const { permissions, refreshToken, roles, token } =
+            await getUserData();
+          setAccountInfo({
+            permissions: permissions,
+            refreshToken: refreshToken,
+            token: token,
+            roles: roles,
+            isAuthenticated: true,
+          });
         } catch (err: any) {
-          singOut();
+          console.log('erro');
         }
       })();
     }

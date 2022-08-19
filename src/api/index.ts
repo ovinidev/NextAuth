@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import axios from 'axios';
 import { Credentials, UserInfo } from '../interface/login';
-import { parseCookies } from 'nookies';
+import { parseCookies, setCookie } from 'nookies';
 
 const { token } = parseCookies();
 
@@ -29,8 +29,40 @@ export function setHeadersToken(token: string) {
   axiosInstance.defaults.headers.Authorization = `Bearer ${token}`;
 }
 
-export async function updateUserData() {
-  const { data } = await axiosInstance.post('refresh');
+export async function updateUserData(refreshToken: string) {
+  const { data } = await axiosInstance.post<UserInfo>('refresh', {
+    refreshToken,
+  });
 
   return data;
 }
+
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    if (error.response.status === 401) {
+      if (error.response?.data.code === 'token.expired') {
+        const { refreshToken } = parseCookies();
+        const { token, refreshToken: newRefreshToken } = await updateUserData(
+          refreshToken,
+        );
+
+        setCookie(undefined, 'token', token, {
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+          path: '/', // Quais caminhos da aplicação tem acesso ao cookie, / = tudo
+        });
+
+        setCookie(undefined, 'refreshToken', newRefreshToken, {
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+          path: '/', // Quais caminhos da aplicação tem acesso ao cookie, / = tudo
+        });
+
+        setHeadersToken(token);
+      } else {
+        //logout
+      }
+    }
+  },
+);

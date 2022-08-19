@@ -8,7 +8,7 @@ export type UserInfo = {
   refreshToken: string;
   roles: string[];
   token: string;
-  isAuthenticated: boolean;
+  isAuthenticated?: boolean;
 };
 
 export type UserInfoByToken = {
