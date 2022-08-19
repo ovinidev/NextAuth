@@ -13,9 +13,13 @@ import { useForm } from 'react-hook-form';
 import { loginSchema } from '../validation/schema';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Credentials } from '../interface/login';
+import { useRouter } from 'next/router';
+import { useToasting } from '../hook/useToast';
 
 const Home: NextPage = () => {
   const { signIn } = useAuth();
+  const { push } = useRouter();
+  const { toastFailedLogin, toastSuccessLogin } = useToasting();
 
   const {
     register,
@@ -25,8 +29,14 @@ const Home: NextPage = () => {
     resolver: yupResolver(loginSchema),
   });
 
-  const onSubmit = (data: Credentials) => {
-    signIn(data);
+  const onSubmit = async (data: Credentials) => {
+    try {
+      await signIn(data);
+      push('/home');
+      toastSuccessLogin();
+    } catch (err: any) {
+      toastFailedLogin(err.message);
+    }
   };
 
   return (

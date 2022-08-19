@@ -1,5 +1,14 @@
-import { createContext, ReactNode, useContext, useState } from 'react';
-import { Credentials } from '../interface/login';
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import { getUserData, login, setHeadersToken } from '../api';
+import { Credentials, UserInfo } from '../interface/login';
+import { setCookie, destroyCookie, parseCookies } from 'nookies';
+import { useRouter } from 'next/router';
 
 type AuthContextProps = {
   children: ReactNode;
@@ -7,24 +16,84 @@ type AuthContextProps = {
 
 type AuthContextData = {
   signIn(credentials: Credentials): Promise<void>;
-  isAuthenticated: boolean;
+  singOut(): void;
+  accountInfo: UserInfo;
 };
 
 const AuthContext = createContext({} as AuthContextData);
 
 export const AuthProvider = ({ children }: AuthContextProps) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [accountInfo, setAccountInfo] = useState({} as UserInfo);
+  const { push } = useRouter();
 
   // Toda função assíncrona retornará uma promise automaticamente
   async function signIn({ email, password }: Credentials) {
-    console.log({ email, password });
+    try {
+      const { permissions, refreshToken, roles, token } = await login({
+        email,
+        password,
+      });
+
+      setAccountInfo({
+        permissions: permissions,
+        refreshToken: refreshToken,
+        token: token,
+        roles: roles,
+        isAuthenticated: true,
+      });
+
+      setCookie(undefined, 'token', token, {
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: '/', // Quais caminhos da aplicação tem acesso ao cookie, / = tudo
+      });
+
+      setCookie(undefined, 'refreshToken', refreshToken, {
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: '/', // Quais caminhos da aplicação tem acesso ao cookie, / = tudo
+      });
+
+      setHeadersToken(token);
+    } catch (err: any) {
+      throw new Error(err.response.data.message);
+    }
   }
+
+  function singOut() {
+    setAccountInfo({
+      permissions: [''],
+      refreshToken: '',
+      token: '',
+      roles: [''],
+      isAuthenticated: false,
+    });
+
+    destroyCookie(undefined, 'token');
+    destroyCookie(undefined, 'refreshToken');
+
+    push('/');
+  }
+
+  useEffect(() => {
+    const { token, refreshToken } = parseCookies();
+
+    if (token) {
+      (async function getData() {
+        try {
+          const response = await getUserData();
+          setAccountInfo(response);
+        } catch (err: any) {
+          singOut();
+        }
+      })();
+    }
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         signIn,
-        isAuthenticated,
+        singOut,
+        accountInfo,
       }}
     >
       {children}
