@@ -7,19 +7,16 @@ import {
   Stack,
   FormErrorMessage,
 } from '@chakra-ui/react';
-import type { NextPage } from 'next';
+import type { GetServerSideProps, NextPage } from 'next';
 import { useAuth } from '../hook/useAuth';
 import { useForm } from 'react-hook-form';
 import { loginSchema } from '../validation/schema';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Credentials } from '../interface/login';
-import { useRouter } from 'next/router';
-import { useToasting } from '../hook/useToast';
+import { parseCookies } from 'nookies';
 
 const Home: NextPage = () => {
   const { signIn } = useAuth();
-  const { push } = useRouter();
-  const { toastFailedLogin, toastSuccessLogin } = useToasting();
 
   const {
     register,
@@ -30,13 +27,7 @@ const Home: NextPage = () => {
   });
 
   const onSubmit = async (data: Credentials) => {
-    try {
-      await signIn(data);
-      push('/home');
-      toastSuccessLogin();
-    } catch (err: any) {
-      toastFailedLogin(err.message);
-    }
+    await signIn(data);
   };
 
   return (
@@ -77,3 +68,21 @@ const Home: NextPage = () => {
 };
 
 export default Home;
+
+// Verifica se tem token, se tiver ele ja redireciona para a home
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const cookies = parseCookies(ctx);
+
+  if (cookies.token) {
+    return {
+      redirect: {
+        destination: '/home',
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: {},
+  };
+};
