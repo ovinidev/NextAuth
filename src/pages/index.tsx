@@ -71,9 +71,9 @@ export default Home;
 
 // Verifica se tem token, se tiver ele ja redireciona para a home
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const cookies = parseCookies(ctx);
+  const { token } = parseCookies(ctx);
 
-  if (cookies.token) {
+  if (token) {
     return {
       redirect: {
         destination: '/home',

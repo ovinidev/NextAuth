@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import axios, { AxiosError } from 'axios';
-import { Credentials, UserInfo } from '../interface/login';
+import { Credentials, UserInfo, UserInfoByToken } from '../interface/login';
 import { parseCookies, setCookie, destroyCookie } from 'nookies';
-import { GetServerSidePropsContext } from 'next';
+import Router from 'next/router';
 
-const { token } = parseCookies();
+const { token, refreshToken } = parseCookies();
 let isRefreshing = false;
 let failedRequestsQueue: any = [];
 
@@ -22,8 +22,6 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       if (error.response?.data.code === 'token.expired') {
-        const { refreshToken } = parseCookies(undefined);
-
         const originalConfig = error.config;
 
         if (!isRefreshing) {
@@ -48,17 +46,13 @@ axiosInstance.interceptors.response.use(
 
               setHeadersToken(token);
 
-              console.log(failedRequestsQueue);
-
-              failedRequestsQueue?.forEach((request: any) =>
-                // @ts-ignore
+              failedRequestsQueue.forEach((request: any) =>
                 request.onSuccess(token),
               );
               failedRequestsQueue = [];
             })
             .catch((err) => {
-              failedRequestsQueue?.forEach((request: any) =>
-                // @ts-ignore
+              failedRequestsQueue.forEach((request: any) =>
                 request.onFailed(err),
               );
               failedRequestsQueue = [];
@@ -69,21 +63,16 @@ axiosInstance.interceptors.response.use(
         }
 
         return new Promise((resolve, reject) => {
-          failedRequestsQueue?.push({
-            // @ts-ignore
+          failedRequestsQueue.push({
             onSuccess: (token: string) => {
               originalConfig.headers['Authorization'] = `Bearer ${token}`;
               resolve(axiosInstance(originalConfig));
             },
-            // @ts-ignore
             onFailed: (err: AxiosError) => {
               reject(err);
             },
           });
         });
-      } else {
-        destroyCookie(undefined, 'token');
-        destroyCookie(undefined, 'refreshToken');
       }
     }
 
@@ -98,7 +87,7 @@ export async function login(body: Credentials) {
 }
 
 export async function getUserDataClient() {
-  const { data } = await axiosInstance.get<UserInfo>('me');
+  const { data } = await axiosInstance.get<UserInfoByToken>('me');
 
   return data;
 }
@@ -115,50 +104,3 @@ export async function updateToken(refreshToken: string) {
 
   return data;
 }
-
-// export function setupApiClient(ctx: GetServerSidePropsContext) {
-//   const { token, refreshToken } = parseCookies(ctx);
-
-//   const axiosInstance = axios.create({
-//     baseURL: 'http://localhost:3333',
-//     headers: {
-//       Authorization: `Bearer ${token}`,
-//     },
-//   });
-
-//   axiosInstance.interceptors.response.use(
-//     (response) => {
-//       return response;
-//     },
-//     async (error) => {
-//       if (error.response?.status === 401) {
-//         if (error.response?.data.code === 'token.expired') {
-//           ('caiu');
-//           const { data } = await axiosInstance.post<UserInfo>('refresh', {
-//             refreshToken,
-//           });
-
-//           setCookie(ctx, 'token', data.token, {
-//             maxAge: 60 * 60 * 24 * 30,
-//             path: '/',
-//           });
-
-//           setCookie(ctx, 'refreshToken', data.refreshToken, {
-//             maxAge: 60 * 60 * 24 * 30,
-//             path: '/',
-//           });
-
-//           // @ts-ignore
-//           axiosInstance.defaults.headers.Authorization = `Bearer ${data.token}`;
-//         } else {
-//           destroyCookie(ctx, 'token');
-//           destroyCookie(ctx, 'refreshToken');
-//         }
-//       }
-
-//       return Promise.reject(error);
-//     },
-//   );
-
-//   return axiosInstance;
-// }

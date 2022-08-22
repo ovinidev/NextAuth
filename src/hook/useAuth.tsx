@@ -5,7 +5,7 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { getUserDataClient, login, setHeadersToken, updateToken } from '../api';
+import { getUserDataClient, login, setHeadersToken } from '../api';
 import { Credentials, UserInfo } from '../interface/login';
 import { setCookie, parseCookies, destroyCookie } from 'nookies';
 import { useRouter } from 'next/router';
