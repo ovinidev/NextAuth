@@ -1,7 +1,8 @@
 import { Button, Flex, Heading } from '@chakra-ui/react';
 import { GetServerSideProps } from 'next';
 import { parseCookies } from 'nookies';
-import { setHeadersToken } from '../api';
+import { useEffect } from 'react';
+import { getUserDataClient, setHeadersToken } from '../api';
 import { useAuth } from '../hook/useAuth';
 
 export default function Home() {

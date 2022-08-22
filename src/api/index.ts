@@ -6,7 +6,7 @@ import { GetServerSidePropsContext } from 'next';
 
 const { token } = parseCookies();
 let isRefreshing = false;
-let failedRequestsQueue: [];
+let failedRequestsQueue: any = [];
 
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:3333',
@@ -19,7 +19,7 @@ axiosInstance.interceptors.response.use(
   (response) => {
     return response;
   },
-  async (error) => {
+  (error) => {
     if (error.response?.status === 401) {
       if (error.response?.data.code === 'token.expired') {
         const { refreshToken } = parseCookies(undefined);
@@ -50,14 +50,14 @@ axiosInstance.interceptors.response.use(
 
               console.log(failedRequestsQueue);
 
-              failedRequestsQueue?.forEach((request) =>
+              failedRequestsQueue?.forEach((request: any) =>
                 // @ts-ignore
-                request.onSuccess(newToken),
+                request.onSuccess(token),
               );
               failedRequestsQueue = [];
             })
             .catch((err) => {
-              failedRequestsQueue?.forEach((request) =>
+              failedRequestsQueue?.forEach((request: any) =>
                 // @ts-ignore
                 request.onFailed(err),
               );
