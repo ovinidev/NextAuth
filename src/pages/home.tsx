@@ -1,9 +1,7 @@
 import { Button, Flex, Heading } from '@chakra-ui/react';
 import { useQuery } from '@tanstack/react-query';
 import { getUserData } from '../api';
-import { requestsWithSSR } from '../api/requestsWithSSR';
 import { useAuth } from '../hook/useAuth';
-import { UserInfoByToken } from '../interface/login';
 import { withSSRAuthenticated } from '../utils/withSSRAuthenticated';
 
 export default function Home() {
@@ -41,7 +39,6 @@ export default function Home() {
 export const getServerSideProps = withSSRAuthenticated(async (ctx) => {
   // const axiosInstanceSSR = requestsWithSSR(ctx);
   // const { data } = await axiosInstanceSSR.get<UserInfoByToken>('me');
-  // console.log(ctx);
 
   return {
     props: {},

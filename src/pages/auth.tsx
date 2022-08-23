@@ -9,8 +9,13 @@ export default function Auth() {
   );
 }
 
-export const getServerSideProps = withSSRAuthenticated(async () => {
-  return {
-    props: {},
-  };
-});
+export const getServerSideProps = withSSRAuthenticated(
+  async () => {
+    return {
+      props: {},
+    };
+  },
+  {
+    role: 'logado',
+  },
+);

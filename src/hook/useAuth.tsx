@@ -23,10 +23,24 @@ type AuthContextData = {
 
 const AuthContext = createContext({} as AuthContextData);
 
+let authChannel: BroadcastChannel;
+
 export const AuthProvider = ({ children }: AuthContextProps) => {
   const [accountInfo, setAccountInfo] = useState({} as UserInfo);
   const { push } = useRouter();
   const { toastFailedLogin, toastSuccessLogin } = useToasting();
+
+  useEffect(() => {
+    authChannel = new BroadcastChannel('auth');
+
+    authChannel.onmessage = (message) => {
+      console.log(message);
+
+      if (message.data === 'logout') {
+        console.log('deslogou');
+      }
+    };
+  }, []);
 
   async function signIn({ email, password }: Credentials) {
     try {
@@ -73,6 +87,8 @@ export const AuthProvider = ({ children }: AuthContextProps) => {
 
     destroyCookie(undefined, 'token');
     destroyCookie(undefined, 'refreshToken');
+
+    authChannel.postMessage('logout');
 
     push('/');
   }
