@@ -2,24 +2,27 @@
 import axios, { AxiosError } from 'axios';
 import { parseCookies, setCookie, destroyCookie } from 'nookies';
 import { GetServerSidePropsContext } from 'next';
+import { AuthTokenError } from '../errors/AuthTokenError';
 
-export function setupApiClient(ctx: GetServerSidePropsContext) {
-  const { token, refreshToken } = parseCookies(ctx);
+export function requestsWithSSR(ctx: GetServerSidePropsContext) {
+  const { token } = parseCookies(ctx);
   let isRefreshing = false;
   let failedRequestsQueue: any = [];
 
-  const axiosInstance = axios.create({
+  const axiosInstanceSSR = axios.create({
     baseURL: 'http://localhost:3333',
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
 
-  axiosInstance.interceptors.response.use(
+  axiosInstanceSSR.interceptors.response.use(
     (response) => {
       return response;
     },
     (error) => {
+      const { refreshToken } = parseCookies(ctx);
+
       if (error.response?.status === 401) {
         if (error.response?.data.code === 'token.expired') {
           const originalConfig = error.config;
@@ -27,7 +30,7 @@ export function setupApiClient(ctx: GetServerSidePropsContext) {
           if (!isRefreshing) {
             isRefreshing = true;
 
-            axiosInstance
+            axiosInstanceSSR
               .post('/refresh', {
                 refreshToken,
               })
@@ -45,7 +48,7 @@ export function setupApiClient(ctx: GetServerSidePropsContext) {
                 });
 
                 // @ts-ignore
-                axiosInstance.defaults.headers.Authorization = `Bearer ${token}`;
+                axiosInstanceSSR.defaults.headers.Authorization = `Bearer ${token}`;
 
                 failedRequestsQueue.forEach((request: any) =>
                   request.onSuccess(token),
@@ -67,7 +70,7 @@ export function setupApiClient(ctx: GetServerSidePropsContext) {
             failedRequestsQueue.push({
               onSuccess: (token: string) => {
                 originalConfig.headers['Authorization'] = `Bearer ${token}`;
-                resolve(axiosInstance(originalConfig));
+                resolve(axiosInstanceSSR(originalConfig));
               },
               onFailed: (err: AxiosError) => {
                 reject(err);
@@ -75,8 +78,7 @@ export function setupApiClient(ctx: GetServerSidePropsContext) {
             });
           });
         } else {
-          destroyCookie(ctx, 'token');
-          destroyCookie(ctx, 'refreshToken');
+          return Promise.reject(new AuthTokenError());
         }
       }
 
@@ -84,5 +86,5 @@ export function setupApiClient(ctx: GetServerSidePropsContext) {
     },
   );
 
-  return axiosInstance;
+  return axiosInstanceSSR;
 }

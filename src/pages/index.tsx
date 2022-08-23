@@ -7,13 +7,13 @@ import {
   Stack,
   FormErrorMessage,
 } from '@chakra-ui/react';
-import type { GetServerSideProps, NextPage } from 'next';
+import type { NextPage } from 'next';
 import { useAuth } from '../hook/useAuth';
 import { useForm } from 'react-hook-form';
 import { loginSchema } from '../validation/schema';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Credentials } from '../interface/login';
-import { parseCookies } from 'nookies';
+import { withSSRGuest } from '../utils/withSSRGuest';
 
 const Home: NextPage = () => {
   const { signIn } = useAuth();
@@ -69,20 +69,8 @@ const Home: NextPage = () => {
 
 export default Home;
 
-// Verifica se tem token, se tiver ele ja redireciona para a home
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const { token } = parseCookies(ctx);
-
-  if (token) {
-    return {
-      redirect: {
-        destination: '/home',
-        permanent: false,
-      },
-    };
-  }
-
+export const getServerSideProps = withSSRGuest(async () => {
   return {
     props: {},
   };
-};
+});

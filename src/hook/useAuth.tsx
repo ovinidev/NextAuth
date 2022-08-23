@@ -5,7 +5,7 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { getUserDataClient, login, setHeadersToken } from '../api';
+import { getUserData, login, setHeadersToken } from '../api';
 import { Credentials, UserInfo } from '../interface/login';
 import { setCookie, parseCookies, destroyCookie } from 'nookies';
 import { useRouter } from 'next/router';
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }: AuthContextProps) => {
 
     if (token && refreshToken) {
       (async function getData() {
-        const { permissions, roles } = await getUserDataClient();
+        const { permissions, roles } = await getUserData();
         setAccountInfo({
           permissions: permissions,
           refreshToken: refreshToken,
@@ -91,8 +91,6 @@ export const AuthProvider = ({ children }: AuthContextProps) => {
           isAuthenticated: true,
         });
       })();
-    } else {
-      singOut();
     }
   }, []);
 

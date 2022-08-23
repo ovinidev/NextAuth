@@ -1,9 +1,10 @@
 import { Button, Flex, Heading } from '@chakra-ui/react';
 import { useQuery } from '@tanstack/react-query';
-import { GetServerSideProps } from 'next';
-import { parseCookies } from 'nookies';
-import { getUserDataClient } from '../api';
+import { getUserData } from '../api';
+import { requestsWithSSR } from '../api/requestsWithSSR';
 import { useAuth } from '../hook/useAuth';
+import { UserInfoByToken } from '../interface/login';
+import { withSSRAuthenticated } from '../utils/withSSRAuthenticated';
 
 export default function Home() {
   const { accountInfo, singOut } = useAuth();
@@ -11,13 +12,10 @@ export default function Home() {
   const { data, error } = useQuery(
     ['data'],
     async () => {
-      const data = await getUserDataClient();
-
+      const data = await getUserData();
       return data;
     },
-    {
-      staleTime: 1000 * 5,
-    },
+    { staleTime: 1000 * 5 },
   );
 
   return accountInfo.isAuthenticated ? (
@@ -40,22 +38,12 @@ export default function Home() {
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const { token, refreshToken } = parseCookies(ctx);
-
-  if (!token || !refreshToken) {
-    return {
-      redirect: {
-        destination: '/',
-        permanent: false,
-      },
-    };
-  }
-
-  // const axiosInstance = setupApiClient(ctx);
-  // const { data } = await axiosInstance.get<UserInfoByToken>('me');
+export const getServerSideProps = withSSRAuthenticated(async (ctx) => {
+  // const axiosInstanceSSR = requestsWithSSR(ctx);
+  // const { data } = await axiosInstanceSSR.get<UserInfoByToken>('me');
+  // console.log(ctx);
 
   return {
     props: {},
   };
-};
+});

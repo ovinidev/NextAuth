@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import axios, { AxiosError } from 'axios';
 import { Credentials, UserInfo, UserInfoByToken } from '../interface/login';
-import { parseCookies, setCookie, destroyCookie } from 'nookies';
+import { destroyCookie, parseCookies, setCookie } from 'nookies';
 import Router from 'next/router';
 
-const { token, refreshToken } = parseCookies();
 let isRefreshing = false;
 let failedRequestsQueue: any = [];
 
+const { token } = parseCookies();
 const axiosInstance = axios.create({
   baseURL: 'http://localhost:3333',
   headers: {
@@ -20,6 +20,8 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
+    const { refreshToken } = parseCookies();
+
     if (error.response?.status === 401) {
       if (error.response?.data.code === 'token.expired') {
         const originalConfig = error.config;
@@ -73,6 +75,10 @@ axiosInstance.interceptors.response.use(
             },
           });
         });
+      } else {
+        Router.push('/');
+        destroyCookie(undefined, 'token');
+        destroyCookie(undefined, 'refreshToken');
       }
     }
 
@@ -86,7 +92,7 @@ export async function login(body: Credentials) {
   return data;
 }
 
-export async function getUserDataClient() {
+export async function getUserData() {
   const { data } = await axiosInstance.get<UserInfoByToken>('me');
 
   return data;
