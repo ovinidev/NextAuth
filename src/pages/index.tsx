@@ -14,6 +14,7 @@ import { loginSchema } from '../validation/schema';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Credentials } from '../interface/login';
 import { withSSRGuest } from '../utils/withSSRGuest';
+import { useMutation } from '@tanstack/react-query';
 
 const Home: NextPage = () => {
   const { signIn } = useAuth();
@@ -26,8 +27,14 @@ const Home: NextPage = () => {
     resolver: yupResolver(loginSchema),
   });
 
+  const { error, isLoading, isSuccess, mutateAsync } = useMutation(
+    async (data: Credentials) => {
+      await signIn(data);
+    },
+  );
+
   const onSubmit = async (data: Credentials) => {
-    await signIn(data);
+    await mutateAsync(data);
   };
 
   return (
@@ -58,7 +65,7 @@ const Home: NextPage = () => {
             </FormControl>
           </Stack>
 
-          <Button type="submit" mt="6" colorScheme="pink">
+          <Button type="submit" mt="6" colorScheme="pink" isLoading={isLoading}>
             Entrar
           </Button>
         </Flex>
