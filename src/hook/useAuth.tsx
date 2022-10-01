@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }: AuthContextProps) => {
 
       toastSuccessLogin();
       push('/home');
-    } catch (err: any) {     
+    } catch (err: any) {
       toastFailedLogin(err.response?.data?.message);
     }
   }
